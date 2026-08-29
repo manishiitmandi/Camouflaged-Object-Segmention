@@ -23,9 +23,9 @@ ehthumbs.db
 Thumbs.db
 
 # Project-specific heavy data / weight folders (exclude from git)
-models/
-datasets/
-outputs/
+/models/
+/datasets/
+/outputs/
 *.pt
 *.pth
 *.bin
