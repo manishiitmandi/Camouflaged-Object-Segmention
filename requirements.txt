@@ -9,7 +9,7 @@ transformers>=4.35.0
 # QWen2.5-VL specific
 accelerate>=0.24.0
 safetensors>=0.4.0
-qwen-vl>=1.0.0
+qwen-vl-utils
 
 # Feature extraction and clustering
 numpy>=1.24.0
