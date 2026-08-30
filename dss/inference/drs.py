@@ -22,7 +22,7 @@ from dss.scoring.scoring import boundary_contact
 from dss.qwen.qwen_utils import pairwise_selection_from_QWen
 
 
-def get_img_list(json_file, pred_dir):
+def get_img_list(json_file, pred_dir, local_dataset_dir=None):
     """Retrieve lists of image paths and corresponding bounding boxes to process."""
     pred_list = glob(os.path.join(pred_dir, "*.png"))
     pred_list = [os.path.basename(pred).replace(".png", "") for pred in pred_list]
@@ -32,10 +32,34 @@ def get_img_list(json_file, pred_dir):
     bbox_list = []
     print(f'{len(pred_list)} imgs finished, left {len(results)-len(pred_list)} imgs to process')
 
+    # Build local path map if local_dataset_dir is provided or exists
+    path_map = {}
+    if not local_dataset_dir:
+        # Infer dataset name from json filename or path if possible
+        for dataset_key in ["camo", "cod10k", "chameleon", "nc4k"]:
+            if dataset_key in json_file.lower():
+                local_dataset_dir = os.path.join("datasets", dataset_key.upper())
+                break
+    
+    if local_dataset_dir and os.path.exists(local_dataset_dir):
+        print(f"Building local image path mapping from: {local_dataset_dir}")
+        for root, _, files in os.walk(local_dataset_dir):
+            for f in files:
+                if f.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    path_map[f.lower()] = os.path.join(root, f)
+    else:
+        print(f"Warning: local_dataset_dir '{local_dataset_dir}' not found. Using paths from JSON file directly.")
+
     for item in tqdm(results):
         confidence = []
         img_path = item["image"]
-        img_name = img_path.split("/")[-1].split(".")[0]
+        
+        # Map path locally
+        basename = os.path.basename(img_path).lower()
+        if basename in path_map:
+            img_path = path_map[basename]
+            
+        img_name = os.path.basename(img_path).split(".")[0]
         if img_name in pred_list:
             continue
         result = item["result"]
@@ -52,7 +76,10 @@ def get_img_list(json_file, pred_dir):
             bboxes = []
             if "description" in result.keys():
                 img = cv2.imread(img_path, flags=0)
-                bboxes.append([0, img.shape[0], 0, img.shape[1]])
+                if img is not None:
+                    bboxes.append([0, img.shape[0], 0, img.shape[1]])
+                else:
+                    bboxes.append([0, 1022, 0, 1022])
             for obj in result:
                 if obj == "confidence":
                     confidence.append(result["confidence"])
@@ -67,6 +94,7 @@ def get_img_list(json_file, pred_dir):
 
     print(f'num of images: {len(img_list)}, {len(bbox_list)}')
     return img_list, bbox_list
+
 
 
 def worker(
@@ -152,15 +180,21 @@ def worker(
         elif not refine and merge:
             merged_sim_maps = merge_sim_maps(sim_maps_leiden, thresh=0.95, visualisation=False)
 
-        qwen_pred = cv2.imread(sam_pred_path, flags=0) > 0
-        orig_size = qwen_pred.shape
-        qwen_pred = cv2.resize(qwen_pred.astype(np.uint8), dsize=(sim_maps_leiden[0].shape[1], 
-                    sim_maps_leiden[0].shape[0]), 
-                    interpolation=cv2.INTER_NEAREST)
+        # On user systems, sam_pred_path may not exist. We fallback to image shape if file is missing.
+        orig_size = (H, W)
+        if include_Qwen_pred:
+            if os.path.exists(sam_pred_path):
+                qwen_pred = cv2.imread(sam_pred_path, flags=0) > 0
+                orig_size = qwen_pred.shape
+                qwen_pred = cv2.resize(qwen_pred.astype(np.uint8), dsize=(sim_maps_leiden[0].shape[1], 
+                            sim_maps_leiden[0].shape[0]), 
+                            interpolation=cv2.INTER_NEAREST)
 
-        if boundary_contact(qwen_pred, n=10) > 0.75:
-            qwen_pred = 1 - qwen_pred
-        qwen_pred = clean_mask(qwen_pred, min_size=100)
+                if boundary_contact(qwen_pred, n=10) > 0.75:
+                    qwen_pred = 1 - qwen_pred
+                qwen_pred = clean_mask(qwen_pred, min_size=100)
+            else:
+                qwen_pred = np.zeros((sim_maps_leiden[0].shape[0], sim_maps_leiden[0].shape[1]), dtype=np.uint8)
 
         end_time1 = time.time()
         FOD_time += (end_time1 - start_time)
@@ -191,7 +225,8 @@ def run_drs_inference(
     dino_model_path='/data/yilong/hf_dinov2',
     qwen_model_path='/data/yilong/hf_Qwen2.5-VL-7B-Instruct',
     sam2_checkpoint='/data/yilong/sam2/checkpoints/sam2.1_hiera_large.pt',
-    sam2_cfg='//data/yilong/sam2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml'
+    sam2_cfg='//data/yilong/sam2/sam2/configs/sam2.1/sam2.1_hiera_l.yaml',
+    local_dataset_dir=None
 ):
     """
     Launch multiprocessing DRS prediction pipeline.
@@ -205,7 +240,7 @@ def run_drs_inference(
     print(f'Predictions will be saved to: {pred_dir}')
     os.makedirs(pred_dir, exist_ok=True)
 
-    img_list, bbox_list = get_img_list(json_file, pred_dir)
+    img_list, bbox_list = get_img_list(json_file, pred_dir, local_dataset_dir=local_dataset_dir)
     gpu_ids = [int(id) for id in gpus.split(',')]
     num_gpus = len(gpu_ids)
     total_processes = num_gpus * processes_per_gpu

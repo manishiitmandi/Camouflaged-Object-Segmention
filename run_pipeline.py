@@ -157,7 +157,8 @@ def main():
             dino_model_path=model_paths.get("dinov2"),
             qwen_model_path=model_paths.get("qwen2.5_vl"),
             sam2_checkpoint=model_paths.get("sam2_vit_l", {}).get("checkpoint"),
-            sam2_cfg=model_paths.get("sam2_vit_l", {}).get("config")
+            sam2_cfg=model_paths.get("sam2_vit_l", {}).get("config"),
+            local_dataset_dir=dataset_path
         )
         print("✓ Stage 2 & 3 Complete. Predictions generated successfully.")
 
