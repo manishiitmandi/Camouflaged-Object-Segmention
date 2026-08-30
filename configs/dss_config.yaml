@@ -1,0 +1,56 @@
+# =====================================================================
+# DSS (Discover, Segment, Select) Configuration File
+# Replicates parameters from the CVPR 2026 paper
+# =====================================================================
+
+# ---------------------------------------------------------------------
+# Model Paths
+# Update these paths if your weights are saved elsewhere
+# ---------------------------------------------------------------------
+model_paths:
+  dinov2: "models/dinov2"                  # Path to DINOv2 weights (e.g. facebook/dinov2-base)
+  qwen2.5_vl: "models/qwen2.5_vl"          # Path to Qwen2.5-VL-7B-Instruct weights
+  sam2_vit_l:
+    checkpoint: "models/sam2_vit_l/sam2.1_hiera_large.pt"
+    config: "models/sam2_vit_l/sam2.1_hiera_l.yaml"
+
+# ---------------------------------------------------------------------
+# Dataset Directory Paths
+# Target images and GT labels must reside within these subdirectories
+# ---------------------------------------------------------------------
+datasets:
+  chameleon: "datasets/CHAMELEON"
+  camo: "datasets/CAMO"
+  cod10k: "datasets/COD10K"
+  nc4k: "datasets/NC4K"
+
+# ---------------------------------------------------------------------
+# Framework Hyperparameters (Table 1 & Section 4 of the Paper)
+# ---------------------------------------------------------------------
+hyperparameters:
+  # Stage 1: Feature-coherent Object Discovery (FOD)
+  dino_patch_size: 14                      # Patch dimension (p)
+  pca_dimensions: 16                       # PCA channel dimensions (d)
+  leiden_resolution: 0.5                   # Leiden clustering resolution scale (r = 0.5)
+  pc_energy_epsilon: 1.0                   # Part Composition (PC) convergence threshold energy (ε = 1.0)
+  pc_weight_alpha: 1.0                     # Feature distance score weight (α = 1.0)
+  pc_weight_beta: 6.0                      # Spatial consistency score weight (β = 6.0)
+  pc_weight_gamma: 0.4                     # Leiden resolution tuning parameter (γ = 0.4)
+  
+  # Stage 2: Bounding Box Generation & SAM Segmentation
+  sbg_correlation_tau: 0.95                # Similarity-based Box Generation (SBG) threshold (τ = 0.95)
+  sam_max_target_size: 1022                # SAM maximum target longest side size (T = 1022)
+  
+  # Stage 3: Semantic-driven Mask Selection (SMS)
+  top_k_candidates: 5                      # Number of top candidate masks to select (K = 5)
+  sms_comparison_order: "ascending"        # Pairwise selection sorting order
+  qwen_max_new_tokens: 512                 # MLLM max text response tokens
+
+# ---------------------------------------------------------------------
+# Hardware & Execution Environment
+# ---------------------------------------------------------------------
+execution:
+  gpus: "0"                                # Comma-separated GPU list (e.g. "0,1,2" for parallel execution)
+  processes_per_gpu: 1                     # Concurrent prediction workers per GPU
+  device: "cuda"                           # CPU or CUDA
+  seed: 42                                 # Global random seed for reproducibility
