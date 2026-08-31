@@ -173,7 +173,7 @@ def query_qwen_for_selection(image, mask1, mask2, QWen_model, QWen_processor, de
     inputs = QWen_processor(
         text=[text],
         images=image_inputs,
-        videos=video_inputs,
+        videos=video_inputs if video_inputs else None,
         padding=True,
         return_tensors="pt",
     )
@@ -305,7 +305,7 @@ def get_pred_from_QWen(img_mask_grid, new_masks, QWen_model, QWen_processor, dev
     inputs = QWen_processor(
         text=[text],
         images=image_inputs,
-        videos=video_inputs,
+        videos=video_inputs if video_inputs else None,
         padding=True,
         return_tensors="pt",
     )

@@ -117,7 +117,7 @@ def get_MAX_IoU_mask_from_SAM(sim_maps, image, predictor, k=3):
             scores.append(score)
             predictions.append(mask)     
     topk_preds, topk_scores = top_k_masks(predictions, scores, k=k) 
-    return predictions, topk_scores
+    return topk_preds, topk_scores
 
 
 def get_MAX_IoU_mask_from_SAM_bbox_from_binary_map(refined_masks, candidate_fgs, leiden_map, image, predictor):

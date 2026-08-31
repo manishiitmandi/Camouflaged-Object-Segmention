@@ -153,7 +153,7 @@ def main():
             processes_per_gpu=processes_per_gpu,
             refine=True,
             merge=True,
-            include_qwen=False,
+            include_qwen=True,
             dino_model_path=model_paths.get("dinov2"),
             qwen_model_path=model_paths.get("qwen2.5_vl"),
             sam2_checkpoint=model_paths.get("sam2_vit_l", {}).get("checkpoint"),

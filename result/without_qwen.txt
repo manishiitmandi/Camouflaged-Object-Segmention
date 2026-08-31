@@ -1,0 +1,10 @@
+=======================================================
+Zero-Shot Camouflaged Object Segmentation Evaluation
+=======================================================
+Structure-measure (S_alpha)   : 0.7081
+Mean Absolute Error (MAE)     : 0.1318
+Enhanced-alignment (E_mean)   : 0.7911
+Enhanced-alignment (E_max)    : 0.7911
+Weighted F-measure (Fw_beta)  : 0.6201
+Max F-measure (F_max)         : 0.6512
+=======================================================
