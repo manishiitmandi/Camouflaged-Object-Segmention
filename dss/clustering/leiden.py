@@ -152,6 +152,7 @@ def get_patch_level_hierarchical_labels(
     labels_map = initial_labels.reshape(H, W)
     leiden_map, init_smoothed_label_image_low_res, smoothed_padded = smooth_and_unpad(labels_map, pad_H, pad_W)
     candidate_fgs = get_candidate_fg_clusters(leiden_map)
+    candidate_fgs_updated = []
     threshold = int(init_smoothed_label_image_low_res.shape[0]*init_smoothed_label_image_low_res.shape[1]*0.01)
 
     leiden_iter_labels_low_res.append(init_smoothed_label_image_low_res)

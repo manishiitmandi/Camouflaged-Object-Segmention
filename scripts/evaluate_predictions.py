@@ -28,7 +28,7 @@ def main():
     parser.add_argument(
         "--pred_dir", 
         type=str, 
-        default="outputs/preds/CAMO/refine+True_merge+True_include+False", 
+        default="outputs/preds/CAMO/refine+True_merge+True_include+True", 
         help="Path to directory containing predicted binary masks (.png)"
     )
     parser.add_argument(
@@ -123,12 +123,12 @@ def main():
     s_alpha = sm_res['sm']
     mae_val = mae_res['mae']
     
-    # E-measure (adp stands for adaptive threshold, em is the curve of thresholded values)
-    e_mean_adp = em_res['adp']
-    e_max = em_res['em'].max()
+    # E-measure (adp stands for adaptive threshold, curve is the curve of thresholded values)
+    e_mean_adp = em_res['em']['adp']
+    e_max = em_res['em']['curve'].max()
     
     # F-measure and Weighted F-measure
-    f_max = fm_res['fm'].max()
+    f_max = fm_res['fm']['curve'].max()
     weighted_f_beta = wfm_res['wfm']
 
     print("\n" + "=" * 55)
