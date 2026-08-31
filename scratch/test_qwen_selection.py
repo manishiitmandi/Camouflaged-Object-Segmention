@@ -22,7 +22,7 @@ sam2_cfg = model_paths.get("sam2_vit_l", {}).get("config")
 qwen_model_path = model_paths.get("qwen2.5_vl")
 
 # Import packages
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from transformers import AutoModel, Qwen2_5_VLForConditionalGeneration, AutoProcessor
 from sam2.build_sam import build_sam2
 from sam2.sam2_image_predictor import SAM2ImagePredictor
