@@ -201,16 +201,10 @@ def worker(
                 if len(bboxes_qwen) > 0 and bboxes_qwen.ndim >= 2:
                     for box in bboxes_qwen:
                         xmin, ymin, xmax, ymax = box
-                        xmin_px = int(xmin * W / 1000.0)
-                        ymin_px = int(ymin * H / 1000.0)
-                        xmax_px = int(xmax * W / 1000.0)
-                        ymax_px = int(ymax * H / 1000.0)
-                        
-                        # Ensure valid bounds
-                        xmin_px = max(0, min(xmin_px, W - 1))
-                        ymin_px = max(0, min(ymin_px, H - 1))
-                        xmax_px = max(xmin_px + 1, min(xmax_px, W))
-                        ymax_px = max(ymin_px + 1, min(ymax_px, H))
+                        xmin_px = max(0, min(int(xmin), W - 1))
+                        ymin_px = max(0, min(int(ymin), H - 1))
+                        xmax_px = max(xmin_px + 1, min(int(xmax), W))
+                        ymax_px = max(ymin_px + 1, min(int(ymax), H))
                         
                         sam_box = np.array([xmin_px, ymin_px, xmax_px, ymax_px])
                         try:
