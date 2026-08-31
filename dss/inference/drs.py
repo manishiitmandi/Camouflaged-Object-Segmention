@@ -128,7 +128,7 @@ def worker(
     QWen_model.eval()
     
     print(f"Worker {rank} loading models on GPU {gpu_id}...")
-    dino_model = AutoModel.from_pretrained(dino_model_path, output_hidden_states=True)
+    dino_model = AutoModel.from_pretrained(dino_model_path, output_hidden_states=True).to(device)
     patch_size = dino_model.config.patch_size
     
     sam2 = build_sam2(sam2_cfg, sam2_checkpoint, device=device, apply_postprocessing=False)
@@ -194,7 +194,46 @@ def worker(
                     qwen_pred = 1 - qwen_pred
                 qwen_pred = clean_mask(qwen_pred, min_size=100)
             else:
-                qwen_pred = np.zeros((sim_maps_leiden[0].shape[0], sim_maps_leiden[0].shape[1]), dtype=np.uint8)
+                # Fallback: compute Qwen prediction mask on-the-fly using SAM and Stage 1 bboxes
+                predictor.set_image(cv2_img)
+                qwen_masks = []
+                # bboxes_qwen has shape [N, 4] where N >= 0. Format: [ymin, xmin, ymax, xmax] scaled to 1000.
+                if len(bboxes_qwen) > 0 and bboxes_qwen.ndim >= 2:
+                    for box in bboxes_qwen:
+                        xmin, ymin, xmax, ymax = box
+                        xmin_px = int(xmin * W / 1000.0)
+                        ymin_px = int(ymin * H / 1000.0)
+                        xmax_px = int(xmax * W / 1000.0)
+                        ymax_px = int(ymax * H / 1000.0)
+                        
+                        # Ensure valid bounds
+                        xmin_px = max(0, min(xmin_px, W - 1))
+                        ymin_px = max(0, min(ymin_px, H - 1))
+                        xmax_px = max(xmin_px + 1, min(xmax_px, W))
+                        ymax_px = max(ymin_px + 1, min(ymax_px, H))
+                        
+                        sam_box = np.array([xmin_px, ymin_px, xmax_px, ymax_px])
+                        try:
+                            mask, _, _ = predictor.predict(
+                                box=sam_box,
+                                multimask_output=False
+                            )
+                            qwen_masks.append(mask[0])
+                        except Exception as e:
+                            print(f"SAM predict failed for box {sam_box}: {e}")
+                
+                if len(qwen_masks) > 0:
+                    qwen_pred_full = np.any(qwen_masks, axis=0).astype(np.uint8)
+                else:
+                    qwen_pred_full = np.zeros((H, W), dtype=np.uint8)
+                
+                qwen_pred = cv2.resize(qwen_pred_full, dsize=(sim_maps_leiden[0].shape[1], 
+                            sim_maps_leiden[0].shape[0]), 
+                            interpolation=cv2.INTER_NEAREST)
+
+                if boundary_contact(qwen_pred, n=10) > 0.75:
+                    qwen_pred = 1 - qwen_pred
+                qwen_pred = clean_mask(qwen_pred, min_size=100)
 
         end_time1 = time.time()
         FOD_time += (end_time1 - start_time)
