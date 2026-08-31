@@ -132,8 +132,9 @@ print(f"Candidates heuristic scores: {candidate_scores_final}")
 mask1, score1 = candidate_masks_final[0], candidate_scores_final[0]
 mask2, score2 = candidate_masks_final[1], candidate_scores_final[1]
 
-masked_img1 = mask1[:, :, np.newaxis] * image
-masked_img2 = mask2[:, :, np.newaxis] * image
+numpy_image = np.array(image)
+masked_img1 = mask1[:, :, np.newaxis] * numpy_image
+masked_img2 = mask2[:, :, np.newaxis] * numpy_image
 
 print("\n--- Simulating query_qwen_for_selection ---")
 # Inline the query logic to print the exact response text
@@ -144,7 +145,7 @@ def encode_img(img):
     return numpy_to_base64(img)
 
 with ThreadPoolExecutor(max_workers=3) as executor:
-    img64, mask1_b64, mask2_b64 = executor.map(encode_img, [image, masked_img1, masked_img2])
+    img64, mask1_b64, mask2_b64 = executor.map(encode_img, [numpy_image, masked_img1, masked_img2])
 
 messages = [
     {
@@ -197,7 +198,7 @@ messages = [
 ]
 
 text = QWen_processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-image_inputs, video_inputs = [image, masked_img1, masked_img2], None
+image_inputs, video_inputs = [numpy_image, masked_img1, masked_img2], None
 
 inputs = QWen_processor(
     text=[text],
