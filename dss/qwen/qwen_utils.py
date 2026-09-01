@@ -241,7 +241,7 @@ def pairwise_selection_from_QWen(image, mask_list, score_list, QWen_model, QWen_
         elif "mask b" in selected_mask_name:
             winner = (mask2, score2)
         else:
-            winner = (mask1, score1)
+            winner = (mask2, score2)
             
         new_list = [winner] + remaining_masks
         new_list.sort(key=lambda x: x[1])

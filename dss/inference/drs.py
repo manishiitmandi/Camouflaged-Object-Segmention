@@ -185,9 +185,8 @@ def worker(
         if include_Qwen_pred:
             if os.path.exists(sam_pred_path):
                 qwen_pred = cv2.imread(sam_pred_path, flags=0) > 0
-                orig_size = qwen_pred.shape
-                qwen_pred = cv2.resize(qwen_pred.astype(np.uint8), dsize=(sim_maps_leiden[0].shape[1], 
-                            sim_maps_leiden[0].shape[0]), 
+                orig_size = (H, W)
+                qwen_pred = cv2.resize(qwen_pred.astype(np.uint8), dsize=(W, H), 
                             interpolation=cv2.INTER_NEAREST)
 
                 if boundary_contact(qwen_pred, n=10) > 0.75:
@@ -217,14 +216,10 @@ def worker(
                             print(f"SAM predict failed for box {sam_box}: {e}")
                 
                 if len(qwen_masks) > 0:
-                    qwen_pred_full = np.any(qwen_masks, axis=0).astype(np.uint8)
+                    qwen_pred = np.any(qwen_masks, axis=0).astype(np.uint8)
                 else:
-                    qwen_pred_full = np.zeros((H, W), dtype=np.uint8)
+                    qwen_pred = np.zeros((H, W), dtype=np.uint8)
                 
-                qwen_pred = cv2.resize(qwen_pred_full, dsize=(sim_maps_leiden[0].shape[1], 
-                            sim_maps_leiden[0].shape[0]), 
-                            interpolation=cv2.INTER_NEAREST)
-
                 if boundary_contact(qwen_pred, n=10) > 0.75:
                     qwen_pred = 1 - qwen_pred
                 qwen_pred = clean_mask(qwen_pred, min_size=100)
